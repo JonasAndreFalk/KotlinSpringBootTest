@@ -10,7 +10,8 @@ import org.springframework.web.bind.annotation.*
 @RestController
 class JourneyController(val journeyService: JourneyService) {
 
-    private var apiUserIdChecker: Long = 1
+	// Header Checker
+    private var apiUserIdChecker: Long = 0
 
     @GetMapping("/journeys/{journeyId}")
     private fun getJourneyById(
