@@ -1,9 +1,11 @@
 package com.example.Test.controller
 
+import com.example.Test.Config.CacheUtil
 import com.example.Test.model.Journey
 import com.example.Test.service.JourneyService
 import com.example.Test.service.exception.JourneysNotFoundException
 import com.example.Test.service.exception.NotAllowedException
+import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
@@ -11,7 +13,7 @@ import org.springframework.web.bind.annotation.*
 class JourneyController(val journeyService: JourneyService) {
 
 	// Header Checker
-    private var apiUserIdChecker: Long = 0
+    private val apiUserIdChecker: Long = 0
 
     @GetMapping("/journeys/{journeyId}")
     private fun getJourneyById(
@@ -21,7 +23,12 @@ class JourneyController(val journeyService: JourneyService) {
         if (apiUserId != apiUserIdChecker)
             throw NotAllowedException("api-user-id not allowed")
 
-        return journeyService.getJourney(journeyId)
+        val journey : Journey? = journeyService.getJourneyFromCache(journeyId)
+
+        if (journey != null)
+            return journey
+        else
+            throw JourneysNotFoundException("No journeys found for Id $journeyId")
 
     }
 
@@ -34,15 +41,16 @@ class JourneyController(val journeyService: JourneyService) {
         if (apiUserId != apiUserIdChecker)
             throw NotAllowedException("api-user-id not allowed")
 
-        val journeys = journeyService.getUserJourneys(userId)
+        val journeysFromCache = journeyService.getUserJourneysFromCache(userId)
 
-        if (journeys.isEmpty())
+        if (journeysFromCache.isEmpty())
             throw JourneysNotFoundException("No journeys found for userId $userId")
 
-        return journeys
+        return journeysFromCache
+
     }
 
-    // Debugging
+    // For testing
     @PostMapping("journeys/create/{sampleSize}")
     @ResponseStatus(HttpStatus.CREATED)
     private fun createRndJourneys(
@@ -52,10 +60,11 @@ class JourneyController(val journeyService: JourneyService) {
        if (apiUserId != apiUserIdChecker)
         throw NotAllowedException("api-user-id not allowed")
 
-       journeyService.createRndJourneys(sampleSize)
+       journeyService.createRndJourneysInCache(sampleSize)
+
     }
 
-    // Debugging
+    // For testing
     @GetMapping("/journeys")
     @ResponseStatus(HttpStatus.OK)
     private fun getAllJourneys(
